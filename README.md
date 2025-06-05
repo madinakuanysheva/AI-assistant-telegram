@@ -2,6 +2,9 @@
 
 A modern Telegram clone with AI integration, built using React, TypeScript, and Tailwind CSS.
 
+## Demo Video
+[Watch the demo video](https://www.loom.com/share/1d0f0cc8de14422a997b8e44e95aceaf?sid=35e4e073-d0db-44b2-a5a2-b28f70392a6b)
+
 ## Features
 
 - 💬 Real-time chat interface
