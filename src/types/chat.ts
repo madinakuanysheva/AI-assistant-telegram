@@ -3,8 +3,8 @@ export interface Message {
   content: string;
   timestamp: number;
   sender: 'user' | 'ai';
-  status: 'sending' | 'sent' | 'delivered' | 'read';
-  type: 'text';
+  status: 'sending' | 'sent' | 'delivered' | 'read' | 'error';
+  type: 'text' | 'file' | 'image' | 'voice' | 'location';
   isReplying?: boolean;
   replyTo?: {
     id: string;

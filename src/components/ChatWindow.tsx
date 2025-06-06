@@ -3,8 +3,8 @@ import { useChat } from '../context/ChatContext';
 import { useTheme } from '../context/ThemeContext';
 import { Message as MessageType } from '../types/chat';
 import { Message } from './Message';
-import { sendMessageToAI } from '../api/ai';
 import { FileUpload } from './FileUpload';
+import { useAIChat } from '../hooks/useAIChat';
 
 export const ChatWindow: React.FC = () => {
   const { state, dispatch } = useChat();
@@ -12,12 +12,13 @@ export const ChatWindow: React.FC = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [messageSearch, setMessageSearch] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeChat = state.chats.find(chat => chat.id === state.activeChat);
   const messages = state.messages[state.activeChat || ''] || [];
+
+  const { sendMessage, isLoading: isAILoading } = useAIChat(state.activeChat || '');
 
   const filteredMessages = useMemo(() => {
     if (!messageSearch.trim()) return messages;
@@ -63,32 +64,7 @@ export const ChatWindow: React.FC = () => {
 
     // Get AI response if it's an AI chat
     if (activeChat?.type === 'ai') {
-      setIsTyping(true);
-      try {
-        const response = await sendMessageToAI(inputMessage);
-        const aiMessage: MessageType = {
-          id: Date.now().toString(),
-          content: response,
-          sender: 'ai',
-          timestamp: Date.now(),
-          type: 'text',
-          status: 'sent'
-        };
-        dispatch({ type: 'ADD_MESSAGE', payload: { chatId: state.activeChat, message: aiMessage } });
-      } catch (error) {
-        console.error('Error getting AI response:', error);
-        const errorMessage: MessageType = {
-          id: Date.now().toString(),
-          content: 'Sorry, I encountered an error. Please try again.',
-          sender: 'ai',
-          timestamp: Date.now(),
-          type: 'text',
-          status: 'sent'
-        };
-        dispatch({ type: 'ADD_MESSAGE', payload: { chatId: state.activeChat, message: errorMessage } });
-      } finally {
-        setIsTyping(false);
-      }
+      sendMessage(inputMessage);
     }
   };
 
@@ -179,7 +155,7 @@ export const ChatWindow: React.FC = () => {
         {filteredMessages.map((message: MessageType) => (
           <Message key={message.id} message={message} onReply={handleReply} />
         ))}
-        {isTyping && (
+        {isAILoading && (
           <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 text-sm">
             <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" />
             <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce delay-100" />
@@ -228,7 +204,7 @@ export const ChatWindow: React.FC = () => {
               // Handle location sharing
               console.log('Location shared:', location);
             }}
-            disabled={isTyping}
+            disabled={isAILoading}
           />
           <input
             type="text"
@@ -237,13 +213,13 @@ export const ChatWindow: React.FC = () => {
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
             className="flex-1 border border-gray-300 dark:border-gray-600 rounded-full px-4 py-2 focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 dark:bg-gray-700 dark:text-white"
-            disabled={isTyping}
+            disabled={isAILoading}
           />
           <button
             onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || isTyping}
+            disabled={!inputMessage.trim() || isAILoading}
             className={`rounded-full p-2 transition-colors duration-200 ${
-              inputMessage.trim() && !isTyping
+              inputMessage.trim() && !isAILoading
                 ? 'bg-blue-500 text-white hover:bg-blue-600'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
             }`}
